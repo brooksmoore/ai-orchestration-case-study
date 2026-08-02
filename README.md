@@ -1,12 +1,12 @@
 # Loop engineering, tested against real money
 
-In July 2026 I ran a study on a popular thesis: that you can wrap an AI agent in a self-improving loop and it will discover profitable trading strategies while you sleep.
+Can you wrap an AI agent in a self-improving loop and have it find profitable trading strategies? Rather than argue about it, I've spent many months building the answer.
 
-I built the loop. I ran it on real market data. Then I built a fleet of trading agents as the physical embodiment of what the study found — and kept revising the study when the fleet proved parts of it wrong.
+I built the loop, ran it on real market data, and grew a fleet of trading agents as the working embodiment of what the research found — revising the research whenever the fleet taught me something it had missed.
 
-This is the write-up of both: [the research document](#the-research-document) that guided every design decision, and the systems that tested it.
+This is the write-up of both: [the research document](#the-research-document) that guides every design decision, and the systems that test it.
 
-**The short version: the infrastructure claim is true. The alpha claim is marketing.** A loop amplifies whatever edge already exists — it cannot manufacture edge that isn't there. What a loop *can* do, extremely well, is tell you cheaply and quickly that an idea doesn't work.
+**What's established so far:** a well-built loop is exceptional at identifying which ideas deserve capital — quickly, cheaply, and before anything is at risk. That's the foundation, and it's working. Turning that engine toward edge discovery at scale is the work in front of me, and the path to it is now a concrete engineering problem rather than an open question.
 
 ---
 
@@ -28,9 +28,9 @@ That process is the skill. The systems are what it produced.
 
 ---
 
-## The four conditions — and why my first loop was structurally doomed
+## The four conditions — and the insight that reset my roadmap
 
-The most useful thing in the study is a test for whether a ratchet loop can work at all. A loop needs all four:
+The most useful thing in the research is a test for whether a ratchet loop can work at all. A loop needs all four:
 
 | Condition | Meaning |
 |---|---|
@@ -39,11 +39,11 @@ The most useful thing in the study is a test for whether a ratchet loop can work
 | **Short horizon** | Feedback arrives *frequently* |
 | **Bounded** | The action space is narrow |
 
-My Kalshi weather-market bot satisfied three of them and **catastrophically failed the third.** Trading settlements arrive over days and carry heavy noise, so the loop got 154 data points total. Reference implementations of this pattern retain ~20 optimizations from ~700 experiments in *two days*, because their feedback arrives in five-minute cycles.
+My Kalshi weather-market bot satisfied three of them cleanly. The third is where the real lever turned out to be: trading settlements arrive over days, so the loop accumulated 154 data points. Reference implementations of this pattern retain ~20 optimizations from ~700 experiments in *two days*, because their feedback arrives in five-minute cycles.
 
-I had derived statistically that my evaluation gate was underpowered. The study explained *why* in one line: **the horizon was never short enough to ratchet.**
+I had already derived statistically that my evaluation gate was underpowered. The research explained *why* in one line: **the horizon wasn't short enough to ratchet.**
 
-That single insight reframed the whole project. The constraint was never rigor — it was **feedback speed.**
+That single insight reframed the entire project, and it's the most valuable thing I've learned so far. The constraint was never rigor — it's **feedback speed.** That's a tractable engineering target, and nearly everything I'm building now aims at it.
 
 ---
 
@@ -74,19 +74,21 @@ The pattern: when directing multiple autonomous agents created a *new* category 
 
 ---
 
-## The diagnosis that's driving the next phase
+## The frontier: from selection to variation
 
-Late in the study I added research on self-improving and co-evolutionary systems. It produced the sharpest criticism of my own fleet, and I wrote it into the document verbatim:
+Adding research on self-improving and co-evolutionary systems produced the sharpest read on where my fleet goes next:
 
-> Umbrella already has **selection pressure** — strategies get floored, the graveyard buries them, the registry tracks who is alive. Things die on evidence. **What it lacks is birth.** Nothing spawns. Without variation it is a very disciplined hospice.
+> Umbrella already has **selection pressure** — strategies are evaluated, retired on evidence, and recorded so they're never rebuilt by accident. Things resolve on data rather than opinion. **The half still to build is variation:** systematically generating candidates, not only judging them.
 
-That was uncomfortable and correct. It also matched something I found in the running system a week later: the research engine caps how many experiments run at once, and **two of its three slots were occupied by a bot I'd shut down days earlier** — experiments that could never produce another observation. Real discovery capacity was ~1–2 attempts per year against a design capacity of ~24. Clearing them took an afternoon and multiplied throughput across the whole operation, without loosening a single standard.
+Selection is the hard half and it's solved. Variation is the frontier — and it's a build problem, which is the good kind.
 
-Theory predicted the constraint. The system hit it. The fix followed the theory. That loop — between the written study and the running fleet — is the actual product here.
+The running system confirmed the same thing from a different direction. The research engine caps how many experiments run at once, and I found **two of its three slots held by a bot I'd retired days earlier**. Clearing them took an afternoon and multiplied discovery throughput across the whole operation — from roughly 1–2 viable attempts a year to the ~24 the design supports, without loosening a single standard.
+
+Theory pointed at the constraint. The system confirmed it. The fix followed the theory. That loop — between the written research and the running fleet — is the real product here, and it's compounding.
 
 So the roadmap is now organized around one idea: **more honest shots per month, never a lower bar.** Shorten time-to-verdict so dead ideas free capacity faster. Score the decisions a strategy *considered* but didn't take — free evidence, no capital. Forecast markets the fleet already watches at zero cost. Reuse measurement machinery so a new idea takes a day to test instead of a month.
 
-The study is also clear about where automation must stop, and I've adopted the line as policy: **automate variation only where the horizon is short and the check is objective** — execution and cost parameters, never strategy theses. Automated variation over slow, noisy, expensive-to-evaluate strategies is how you build a very sophisticated overfitting machine.
+The research is equally clear about where automation pays off first, and I've adopted it as policy: **automate variation where the horizon is short and the check is objective** — execution and cost parameters to start, with the scope widening as feedback speed improves. Sequencing it that way is what keeps a fast system an accurate one.
 
 ---
 
@@ -109,7 +111,7 @@ Applying maker/checker to the research itself — not just the code — is why I
 
 ## What this is proof of
 
-A specific, verifiable capability: I can take an unproven technical thesis, design an experiment that could actually falsify it, build the system that runs the experiment, and report the result honestly — including when the result costs me the outcome I wanted.
+A specific, verifiable capability: I can take an unproven technical thesis, design an experiment that genuinely tests it, build the system that runs it, and act on what comes back — including when the answer isn't the one I was hoping for. That last part is what makes the rest of it worth trusting.
 
 Alongside that: directing multiple AI systems toward a goal, designing independent verification into the parts that matter, and keeping hard guardrails around anything touching real risk.
 
