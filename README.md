@@ -1,10 +1,10 @@
-# How I run a multi-model AI build process as a non-engineer
+# How I direct multiple AI models to build systems I can trust
 
-I'm a sales consultant with a Ross MM, not a software engineer. Working around a full-time commercial job, I've used Claude, Grok, and other coding assistants to build and run a fleet of seven automated trading-research agents, plus a governance layer that supervises all of them and can overrule any one of them.
+I'm a sales consultant with a Ross MM. Working around a full-time commercial job, I've used Claude, Grok, and other coding assistants to build seven automated trading-research agents and the governance layer that supervises them. Four run continuously today. Three reached final verdicts and were retired — which is the part I'd actually point to.
 
-The honest constraint I started from: **I can direct these models, but I can't personally read every line they write.**
+The principle everything is built on: **no single output should be trusted without independent verification — mine or a model's.**
 
-Everything I've built follows from taking that seriously. Instead of trusting my own review, I built a process where the models check each other — and then pushed the checking down into the code itself, so correctness doesn't depend on me noticing.
+So instead of relying on my own review, I built a process where the models check each other, then pushed the checking down into the code itself, so correctness doesn't depend on anyone noticing.
 
 The result is a research operation that can tell me whether an idea works in **days, for a few dollars** — where the same answer used to cost me six weeks and real money.
 
@@ -12,9 +12,9 @@ The result is a research operation that can tell me whether an idea works in **d
 
 ## The process
 
-Trusting a single model's output on anything touching money is a bad idea — not because models are untrustworthy in the abstract, but because I can't independently check a claim like *"this fixes the race condition"* if I can't read the diff closely enough to know.
+A claim like *"this fixes the race condition"* is only as good as the check behind it. Reading the diff and agreeing with it isn't a check — it's the same judgment twice. Anything touching money needed a second, independent source of truth.
 
-So I stopped treating any one model as the source of truth:
+So I stopped treating any one model as authoritative:
 
 - One model proposes a change. A **separate** model audits it independently.
 - Disagreements are **settled with evidence** — a test, a measurement, a receipt — never by picking the answer I liked.
@@ -80,9 +80,9 @@ The ambition isn't to guess a winning strategy. It's to **compress the cost of f
 
 ## What this is proof of
 
-I'm not pitching myself as an engineer. I'm pitching a specific, verifiable capability:
+A specific, verifiable capability:
 
-I can direct multiple AI systems toward a goal, build independent verification for the parts I can't personally check, keep hard guardrails around anything touching real risk, and hold that discipline when no one is making me — including when it costs me the answer I wanted.
+I can direct multiple AI systems toward a goal, design independent verification into the parts that matter, keep hard guardrails around anything touching real risk, and hold that discipline when no one is making me — including when it costs me the answer I wanted.
 
 That maps directly to roles built around operating and scaling AI-driven workflows rather than writing production code: AI operations, AI enablement, or revenue/GTM operations where the automation layer is native to the job rather than a side project.
 
