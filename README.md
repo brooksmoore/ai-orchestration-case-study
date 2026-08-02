@@ -6,7 +6,7 @@ The principle everything is built on: **no single output should be trusted witho
 
 So instead of relying on my own review, I built a process where the models check each other, then pushed the checking down into the code itself, so correctness doesn't depend on anyone noticing.
 
-The result is a research operation that can tell me whether an idea works in **days, for a few dollars** — where the same answer used to cost me six weeks and real money.
+The result is a research operation that can tell me whether an idea works in **days, for a few dollars** — where the same answer used to cost me six weeks and real money. The same process, pointed at a different problem, also produced [aissistant](https://github.com/brooksmoore/aissistant): a personal AI assistant that two people have used every day since July 8, 2026.
 
 ---
 
@@ -58,6 +58,20 @@ The pattern: when directing multiple autonomous agents created a *new* category 
 **Discipline under a real loss.** A small 13F-mirror agent traded real money on a ring-fenced account and went against me. I closed it at the pre-committed stop rather than on a story I told myself, and moved back to paper. What I do when a system I built loses money is diagnose and constrain it — not rationalize it, and not raise the stakes to prove it wrong.
 
 **The system overruled a result I wanted.** This is the one I'm proudest of. A strategy cleared the statistical bar on its own numbers — a genuine "this works" signal. The gate then asked a second question: *out of how many things did we try?* Across 17 registered experiments, a single winner is what luck looks like, so the verdict was automatically demoted from CONTINUE to **INSUFFICIENT**. I built a machine that tells me no, and it was right.
+
+---
+
+## The same discipline where the risk isn't money
+
+Everything above is a trading system, and every verdict above is a negative one — retired, paper, or closed at a pre-set stop. That's honest, and I'd rather show it than hide it, but it leaves a fair question open: does this process ever produce something that just works?
+
+[aissistant](https://github.com/brooksmoore/aissistant) is my answer. It's a personal AI assistant on Telegram, built for my girlfriend and myself, and it has been the thing we both actually use every day since July 8, 2026 — a few cents a day to run, one six-hour outage, 240+ automated tests.
+
+No money moves through it, so the risk changed shape rather than disappearing: the failure mode is an assistant that says it saved something it didn't, which for a tool whose whole value is "you can stop holding this in your head" is as damaging as a bad fill. And unlike a trade, nobody reviews each reply before it ships. So the maker/checker pattern moved from a second model into runtime code: after every response, the system checks whether a claimed change has a real database write behind it, and if it doesn't, the model gets exactly one chance to do the work or walk the claim back. Every trip is counted in the database, so reliability is a number I can query rather than an impression I carry. When I later found the checker itself could be fooled twice in a row, the checker got its own checker.
+
+The same rules I learned on the bots kept paying off in a completely different domain. The 97%-backtest lesson — never trust a number the system generated about itself — is what made me check the AI provider's own usage counters instead of assuming my cost caching was working. It wasn't: a timestamp updating every minute was silently breaking the cache on every message, and underneath that, my prompt sat below the provider's minimum cacheable size, so the optimization I'd relied on for weeks had never engaged once. The "alive but not working" blindness that the fleet coordination layer exists to solve showed up here too, when both bots sat wedged for six hours with their processes healthy and nothing alerting — now covered by an independent watchdog that deliberately alerts through a different channel than the one that might be broken.
+
+It's the clearest evidence that the process isn't only good at killing things. The [engineering log](https://github.com/brooksmoore/aissistant/blob/main/ENGINEERING_LOG.md) documents a dozen production failures with their root causes and the regression tests that now guard them, and a [plain-language case study](https://github.com/brooksmoore/aissistant/blob/main/CASE_STUDY.md) covers the same ground in non-technical terms. Two users is not a business, and I'm not claiming otherwise. It is a real thing that real people depend on daily.
 
 ---
 
