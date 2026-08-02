@@ -1,71 +1,124 @@
 # How I run a multi-model AI build process as a non-engineer
 
-I'm a sales consultant with a Ross MM, not a software engineer. Over the past several months, working around a full-time commercial job, I've used Claude, Grok, and other coding assistants to design and build two public multi-agent systems: a four-agent trading platform (github.com/brooksmoore/multi-agent-llm-trading-platform) and a deterministic cross-venue arbitrage bot (github.com/brooksmoore/pure-arb-bot). Neither has made money. That's not the point of this write-up. The point is what building them required me to figure out, because the honest constraint I started from was: I can direct these models, but I can't personally read every line they write.
+I'm a sales consultant with a Ross MM, not a software engineer. Working around a full-time commercial job, I've used Claude, Grok, and other coding assistants to build and run a fleet of seven automated trading-research agents plus a governance layer that supervises them.
 
-## The actual problem I had to solve
+None of them has made money. The fleet currently holds **$0.00 in live capital**, on purpose.
 
-Early on it was obvious that trusting a single model's output on anything touching real capital was a bad idea, not because the model is untrustworthy in some abstract sense, but because I have no way to independently verify a claim like "this fixes the race condition" if I can't read the diff closely enough to know. So I stopped treating any one model as the source of truth and built a process instead: one model proposes a change, a second, separate model audits it independently, and disagreements get arbitrated rather than resolved by picking whichever answer I liked better. I keep a running memory file and a ledger per project so context survives between sessions instead of living in my head, because I genuinely cannot track the state of five-plus codebases by memory alone.
+That sounds like a failure, so let me be precise about what I think I've actually built: not a profitable trading system, but a research process that reliably tells me the truth — including when the truth is "this doesn't work" or "you don't have enough evidence to say yet." Every strategy I've tested has been killed by that process. Several of them were killed *before* they could cost me anything.
 
-That process is the actual skill. The bots are the artifact it produced.
+The honest constraint I started from: **I can direct these models, but I can't personally read every line they write.** Everything below follows from taking that seriously instead of pretending otherwise.
 
-## What the systems themselves demonstrate
+---
 
-Because I couldn't personally vouch for correctness, I pushed the verification into the code itself rather than into my own judgment:
+## The problem I had to solve
 
-- Every trade a model proposes clears a deterministic guardrail layer (a `RiskGate` class) before it reaches a broker — position limits, concentration caps, drawdown rules, a kill switch. The model proposes; it never executes directly.
-- Order state is stored in an append-only event log, not a value I overwrite. On restart, the system replays that log and reconciles against the broker, which is treated as the source of truth, so a crash mid-trade doesn't leave me guessing what actually happened.
-- Order submission is idempotent on a client-side order ID, so a retried network call can't silently double an order. I audited this myself recently and found it's solid where it matters most (the live-broker paths) and had a real, unfixed gap in an older, now-shelved project — which is itself the kind of thing this process is built to catch.
-- The arbitrage bot's two-leg execution follows what's formally called a saga pattern: if the second leg of a trade fails after the first one filled, the system doesn't just log an error, it runs a defined compensating transaction to unwind the exposure, with an explicit escalation path if the unwind itself fails.
+Trusting a single model's output on anything touching real money is a bad idea — not because models are untrustworthy in the abstract, but because I have no way to independently check a claim like *"this fixes the race condition"* if I can't read the diff closely enough to know.
 
-None of this required me to write the implementation by hand. It required me to know what questions to ask, what to insist on before I'd trust an answer, and how to structure a process where an error in one model's output gets caught by another step rather than by me happening to notice.
+So I stopped treating any one model as the source of truth and built a process instead:
 
-## It's a fleet, not one bot, and it needed its own governance layer
+- One model proposes a change. A **separate** model audits it independently.
+- Disagreements get **arbitrated with evidence** — a test, a measurement, a receipt — not resolved by picking whichever answer I liked better.
+- Every project keeps a running status file and an append-only ledger, so context survives between sessions instead of living in my head. I genuinely cannot track eight codebases from memory.
 
-The trading platform above is one piece of a wider set of agents I run across two brokers, Alpaca and Robinhood. One of them (a smaller, quarterly rebalancing agent that mirrors public 13F filings) trades with real money on a shared Robinhood account; the rest run in paper mode. Once more than one agent could touch the same brokerage account, a new problem showed up that no single bot's code could solve: nothing stopped one agent from acting on a position it didn't actually own, and nothing gave me one place to see the whole fleet's exposure at once.
+**That process is the skill. The bots are the artifact it produced.**
 
-So I built a separate coordination layer for exactly that problem, deliberately read-only: it can't place a single trade. It reads a standardized state snapshot from every agent, enforces a fail-closed ownership rule (an agent that can't confirm it owns a position is blocked from selling it, full stop), and tracks whole-fleet capital and AI spend that no individual agent can see on its own. It now runs continuously with its own passing test suite alongside the bots' suites it verifies against, plus a small-N scoreboard and an advisory analyst whose predictions are scored against a "beat doing nothing" baseline so it can't grade itself on gimmes. The next piece — a per-symbol exposure watchdog across the whole book — is being built right now the same way everything else was: the auditing model wrote 25 failing acceptance tests first, locked them against edits by the building model, and the implementation has to turn them green without touching them. I'm not claiming any of it is finished. I'm pointing to it because it's the clearest evidence of the actual skill: when directing multiple autonomous agents created a new risk that didn't exist when I was running one, I built the governance layer for that risk before scaling further, instead of after something went wrong.
+---
 
-## Where it got tested for real — twice
+## Verification lives in the code, not in my judgment
 
-In the spring I moved a small live position and lost money on it. I wrote an honest postmortem, tightened the gates that let that happen, and moved back to paper testing rather than either quitting or doubling the stakes to "prove it wrong." That's the actual evidence I'd point to over a hypothetical backtest: what I do when a system I built loses real money is diagnose and constrain it, not rationalize it or walk away.
+Because I can't personally vouch for correctness, I pushed the checking into the system itself:
 
-It happened again, on purpose-built terms, with the live 13F-mirror sleeve. It's currently down about 30% on roughly $70 of real capital. Rather than argue with the drawdown, I ran the pre-committed test I'd want a disciplined operator to run: does the strategy have any *historical* merit, or am I holding a dud? The honest answer came back **INSUFFICIENT** — the fund being mirrored has only filed six quarterly disclosures, and I'd frozen a rule in advance that says you need at least eight before the data can speak. So the backtest can't rescue or condemn the position, and I refused to let it pretend otherwise. The decision that remains is a plain risk-tolerance call under a pre-set dollar stop, not a story I told myself to feel better. Knowing the difference between "the data says stop" and "the data can't say anything yet" is most of the discipline.
+- **Models propose; they never execute.** Every trade clears a deterministic guardrail layer — position limits, concentration caps, drawdown rules, a kill switch — before it can reach a broker.
+- **Order state is an append-only event log**, not a value I overwrite. On restart the system replays the log and reconciles against the broker as source of truth, so a crash mid-trade doesn't leave me guessing.
+- **Order submission is idempotent** on a client-side ID, so a retried network call can't silently double an order.
+- **Two-leg trades use a saga pattern.** If the second leg fails after the first fills, the system runs a defined compensating transaction to unwind the exposure, with an escalation path if the unwind itself fails.
 
-## The strongest single piece of evidence: killing my own strategy with a pre-committed test
+None of this required me to write the implementation by hand. It required knowing what to insist on before I'd trust an answer.
 
-That postmortem taught me something specific: my earlier bot ran six weeks past the point the evidence said its thesis was wrong, because every incremental fix produced a plausible local improvement. So on the rebuilt version of that strategy (a Kalshi weather-market trader), I did it differently. Before evaluating anything, I pre-committed a kill criterion in writing: after 100 held-out settled trades, if the best achievable expected value — net of fees, spread, and slippage, with every fixable execution leak closed — was still at or below zero, the strategy would be declared dead. No extensions, no "keep watching."
+---
 
-The evaluation harness itself was built maker/checker: one model diagnoses losses on a training window and proposes one change; a separate, pure-Python checker scores that change on strictly later, held-out data, with an effect-size bar so a proposal can't get promoted by noise. The rule underneath it all: the data that justifies a change must never include the data the change was derived from.
+## It's a fleet, so it needed its own governance layer
 
-The verdict came back at 154 settled paper trades: net expected value of −$0.023 per contract. The edge was dead, and no execution improvement could rescue it — closing the biggest cost leak recovered about a quarter of the bleed without flipping the sign. Total cost of that answer: under $5 of compute and zero capital at risk, versus the six weeks and real money the same lesson cost me the first time. I consider that negative result the most valuable output of the whole project, because it proves the process tells me the truth rather than what I'd like to hear. The strategy is retired with the verdict written into its repo, instead of quietly running in the background on hope.
+Once more than one agent could touch the same brokerage account, a problem appeared that no single bot's code could solve: nothing stopped one agent from acting on a position it didn't own, and nothing gave me one place to see total exposure.
 
-## What the process has caught since then
+So I built a separate coordination layer — deliberately **read-only, it cannot place a single trade**. It reads a standardized state snapshot from every agent and enforces a fail-closed ownership rule: an agent that can't confirm it owns a position is blocked from selling it, full stop. It tracks fleet-wide capital and AI spend that no individual agent can see, and it runs continuously behind **334 of its own tests**.
 
-The same discipline keeps producing verdicts, and I think the catches are better evidence than any win would be:
+The pattern I'd point to: when directing multiple autonomous agents created a *new* category of risk, I built the governance for that risk before scaling further — not after something went wrong.
 
-- **A second strategy got a grave instead of a slow fade.** My small-cap SEC-filings agent ran sixteen days, placed zero live trades, and its built-in adversarial auditor was never able to prove the thesis had edge. Rather than let it idle indefinitely, I retired it with a written postmortem whose verdict is deliberately precise: *never proven — retired at cost-of-proof, not disproven*. Knowing the difference between "this is dead" and "proving this would cost more than it could return" is the same muscle as the kill criterion, applied before money ever moved. Dead theses go into a machine-readable graveyard the whole fleet checks, so a retired idea can't be accidentally rebuilt from scratch six months later.
-- **A 97% win rate turned out to be a measurement artifact — and the process caught it before a dollar touched it.** My BTC event-contract bot's backtest reported a 97% win rate and thousands in paper profit. The audit found it was scoring trades against the model's *own* estimated price, not real market prices: a system grading its own homework, perfectly consistent and completely unverified. The response became a fleet-wide rule — any backtest scored against model-own prices is an inadmissible evidence class — and the bot was rebuilt measurement-first: capture real bids and asks at signal time, then evaluate. A daily automated tripwire now checks that captured entry prices remain real, so that class of fiction can't quietly return.
-- **The audit pattern works on documents, not just code.** When I had one model compile months of research findings into a working reference, I had a second model review it adversarially before acting on it. That pass found five real errors — including a promotion gate whose statistical power had never been computed: thresholds individually reasonable, jointly so strict the gate would almost never fire, which would read as "nothing left to improve" when it actually means "the test can't see at this sample size." The authoring model accepted four findings outright and sharpened the fifth. Maker/checker isn't a coding trick; it's how I treat any single model's confident output, including summaries of my own work.
+---
 
-The rules that generalize out of all of this are written down in [the verification playbook](VERIFICATION_PLAYBOOK.md) — the reusable part, separated from my bots.
+## What the process has actually caught
 
-## What this is actually proof of
+I think the catches are better evidence than any win would be.
 
-I'm not pitching myself as an engineer. I'm pitching a specific, verifiable capability: I can direct multiple AI systems toward a goal, build in independent verification for the parts I can't personally check, keep guardrails around anything touching real risk, and hold that discipline even when no one's making me. That's a close match for roles built around operating and scaling AI-driven workflows rather than writing production code from scratch — AI operations, AI enablement, or revenue/GTM operations roles where the automation layer is native to the job, not a side project.
+**A 97% win rate that was fiction.** My BTC event-contract bot's backtest reported a 97% win rate and thousands in paper profit. The audit found it was scoring trades against the model's *own* estimated prices rather than real market prices — a system grading its own homework. That became a fleet-wide rule: any backtest scored against model-own prices is an inadmissible class of evidence. The bot was rebuilt measurement-first, and a daily tripwire now checks that captured entry prices stay real.
 
-The repos are public. The process that produced them is the thing I'd actually want to talk about in an interview.
+**A strategy killed by a criterion I wrote before looking.** On a Kalshi weather trader I pre-committed a kill rule in writing: after 100 held-out settled trades, if the best achievable expected value net of all costs was still at or below zero, the strategy was dead. No extensions. The verdict came at 154 settled trades: **−$0.023 per contract.** Total cost of that answer: under $5 of compute and zero capital at risk — versus the six weeks and real money the same lesson cost me on an earlier bot that I let run past the evidence.
+
+**A strategy that got a grave instead of a slow fade.** My SEC-filings agent ran sixteen days, placed zero live trades, and never proved its thesis. I retired it with a deliberately precise verdict: *never proven — retired at cost-of-proof, not disproven.* Knowing the difference between "this is dead" and "proving this would cost more than it could return" is the same muscle, applied before money moved.
+
+**A live position closed at a pre-set stop.** A small 13F-mirror agent traded real money on a ring-fenced account. It went against me. I closed it at −32.6% on roughly $70, on the pre-committed terms rather than on a story I told myself. The fleet has held zero live capital since. What I do when a system I built loses real money is diagnose and constrain it — not rationalize it, and not double the stakes to prove it wrong.
+
+**The system overruled a result I would have liked.** This is the one I'm proudest of. A btc strategy cleared the statistical bar on its own numbers — a genuine "this works" signal. The gate then asked a second question: *out of how many things did we try?* With 17 registered experiments and zero prior survivors, one winner is what luck looks like. The verdict was automatically demoted from CONTINUE to **INSUFFICIENT**. The machine told me no, and it was right to.
+
+---
+
+## Where it stands, honestly
+
+**17 experiments registered. 0 survivors. $0.00 live capital.**
+
+I want to be straight about that number rather than dress it up, because the arithmetic is genuinely reassuring once you look at it:
+
+If roughly 5% of tested strategy ideas have real durable edge — a reasonable assumption in this domain — then 17 attempts should produce **fewer than one** survivor on average. There's about a 42% chance of seeing exactly zero even if the bar is calibrated perfectly and real edges exist. **Zero survivors from 17 attempts isn't evidence the bar is too strict. It's evidence I haven't taken many shots yet.**
+
+That distinction is the whole game, and it points at what's actually limiting me. It isn't rigor. It's throughput.
+
+---
+
+## What's next: the constraint moved
+
+The interesting recent discovery was diagnostic. The research engine caps how many experiments can run at once, and I found that **two of its three slots were occupied by a bot that had been shut down a week earlier** — experiments that could never produce another observation. Real discovery capacity was ~1–2 attempts per year against a design capacity of ~24.
+
+Clearing those slots cost an afternoon and multiplied the throughput of the entire operation. Nothing was loosened to do it.
+
+That reframed the roadmap around a single idea: **more honest shots per month, never a lower bar.** The levers are all speed and volume, not permissiveness —
+
+- shortening time-to-verdict, so dead ideas free capacity faster
+- scoring the decisions a strategy *considered* but didn't take, which costs nothing and multiplies evidence
+- forecasting markets the fleet already watches, at zero capital and zero LLM cost, to build calibration without waiting on trades
+- reusing measurement machinery across strategies so a new idea takes a day to test, not a month
+
+The honest ambition: not "find a winning strategy," but **compress the cost of finding out from six weeks and real money down to days and a few dollars** — and then do it often enough that the base rate works in my favor. That's a solvable engineering problem, which is exactly why I find it a more interesting one than picking trades.
+
+---
+
+## What this is proof of
+
+I'm not pitching myself as an engineer. I'm pitching a specific, verifiable capability:
+
+I can direct multiple AI systems toward a goal, build independent verification for the parts I can't personally check, keep hard guardrails around anything touching real risk, and hold that discipline when no one is making me — including when the discipline costs me the answer I wanted.
+
+That maps to roles built around operating and scaling AI-driven workflows rather than writing production code from scratch: AI operations, AI enablement, or revenue/GTM operations where the automation layer is native to the job rather than a side project.
+
+The repos are public. The process that produced them is what I'd want to talk about.
+
+---
 
 ## The fleet
 
 | Repo | What it is | Status |
 |---|---|---|
-| [multi-agent-llm-trading-platform](https://github.com/brooksmoore/multi-agent-llm-trading-platform) | Four Claude models running differentiated mandates behind a deterministic risk layer | Paper trading |
-| [pure-arb-bot](https://github.com/brooksmoore/pure-arb-bot) | Cross-venue Kalshi/Polymarket structural arbitrage; ~200K markets canonicalized per cycle; 480+ tests | Paper, live-gated |
-| [hood-ai-trading-agent](https://github.com/brooksmoore/hood-ai-trading-agent) | LLM reasoning on small-cap SEC filings behind an adversarial auditor and a forward-only calibration gate | Retired at cost-of-proof, zero live trades (postmortem in repo) |
-| [btc-kalshi-contract-trader](https://github.com/brooksmoore/btc-kalshi-contract-trader) | Short-horizon BTC event-contract trader, rebuilt measurement-first after its 97% backtest was caught scoring against its own model's prices | Paper, real-price capture and fill-honest measurement running |
-| [portfolio-mirror-agent](https://github.com/brooksmoore/portfolio-mirror-agent) | Deterministic 13F mirror-basket agent on a ring-fenced account; append-only ownership ledger, fail-closed broker safety | Live (small stake, drawdown stop armed) |
-| [kalshi-market-maker](https://github.com/brooksmoore/kalshi-market-maker) | Weather strategy retired by the pre-committed test described above; the repo now hosts a new, separately pre-registered maker-side experiment with frozen kill bars and a dated window | Weather retired (verdict in repo); new experiment in paper simulation |
-| music-market-trader *(private)* | Paper Kalshi music-market trader with a pre-registered coherence window; built with no order-placing code by construction | Paper, research window running |
-| umbrella-fleet-brain *(private)* | The read-only coordination layer described above — ownership ledger, fleet exposure, AI-spend metering, scored analyst | Running, never trades |
+| [multi-agent-llm-trading-platform](https://github.com/brooksmoore/multi-agent-llm-trading-platform) | Four Claude models running differentiated mandates behind a deterministic risk layer; 844 tests | Paper trading |
+| [pure-arb-bot](https://github.com/brooksmoore/pure-arb-bot) | Cross-venue Kalshi/Polymarket structural arbitrage; ~200K markets canonicalized per cycle | Concluded — no live path |
+| [hood-ai-trading-agent](https://github.com/brooksmoore/hood-ai-trading-agent) | LLM reasoning on small-cap SEC filings behind an adversarial auditor | Retired at cost-of-proof; zero live trades (postmortem in repo) |
+| [btc-kalshi-contract-trader](https://github.com/brooksmoore/btc-kalshi-contract-trader) | Short-horizon BTC event contracts, rebuilt measurement-first after the 97% artifact | Paper; retrospective edge floored at −1.27¢/contract over 167 fills, forward test running |
+| [portfolio-mirror-agent](https://github.com/brooksmoore/portfolio-mirror-agent) | Deterministic 13F mirror-basket agent; append-only ownership ledger, fail-closed broker safety | Concluded — closed at a pre-set stop, −32.6%; no live capital |
+| [kalshi-market-maker](https://github.com/brooksmoore/kalshi-market-maker) | Weather strategy retired by the pre-committed test above; repo now hosts a separately pre-registered maker-side experiment with frozen kill bars | Weather retired (verdict in repo); new experiment in simulation |
+| music-market-trader *(private)* | Paper Kalshi music-market trader with a pre-registered research window; no order-placing code by construction | Paper, window running |
+| umbrella-fleet-brain *(private)* | The read-only governance layer — ownership ledger, fleet exposure, AI-spend metering, experiment registry, scored analyst; 334 tests | Running; never trades |
 
-*Written July 2026, last updated 2026-07-25. Everything above is verifiable in the repos' commit histories, test suites, and audit ledgers. Two coordination and research repos run privately and are noted without links.*
+The reusable rules, separated from my bots, are in [the verification playbook](VERIFICATION_PLAYBOOK.md).
+
+---
+
+*Last updated 2026-08-02. Every number above is verifiable in the repos' commit histories, test suites, and audit ledgers. Two coordination and research repos run privately and are noted without links.*
