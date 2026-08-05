@@ -117,25 +117,27 @@ Alongside that: directing multiple AI systems toward a goal, designing independe
 
 That maps to roles built around operating and scaling AI-driven workflows rather than writing production code: AI operations, AI enablement, or revenue and GTM operations where the automation layer is native to the job.
 
-The repos are public. The process that produced them is what I'd want to talk about.
+The repositories are private. They hold strategy research that loses its value once published, so what follows describes the fleet rather than linking to it. The process that produced it is what I'd want to talk about.
 
 ---
 
 ## The fleet
 
-| Repo | What it is | Status |
+| Agent | What it is | Status |
 |---|---|---|
-| [multi-agent-llm-trading-platform](https://github.com/brooksmoore/multi-agent-llm-trading-platform) | Four Claude models running differentiated mandates behind a deterministic risk layer; 844 tests | Paper trading |
-| [btc-kalshi-contract-trader](https://github.com/brooksmoore/btc-kalshi-contract-trader) | Short-horizon BTC event contracts, rebuilt measurement-first after the 97% artifact | Paper; forward test running |
-| [kalshi-market-maker](https://github.com/brooksmoore/kalshi-market-maker) | Weather strategy retired by the pre-committed test above; repo now hosts a separately pre-registered maker-side experiment with frozen kill bars | New experiment in simulation |
-| music-market-trader *(private)* | Paper Kalshi music-market trader with a pre-registered research window; no order-placing code by construction | Paper, window running |
-| umbrella-fleet-brain *(private)* | The read-only governance layer: ownership ledger, fleet exposure, AI-spend metering, experiment registry, scored analyst; 337 tests | Running; never trades |
-| [pure-arb-bot](https://github.com/brooksmoore/pure-arb-bot) | Cross-venue Kalshi/Polymarket structural arbitrage; ~200K markets canonicalized per cycle | Concluded |
-| [hood-ai-trading-agent](https://github.com/brooksmoore/hood-ai-trading-agent) | LLM reasoning on small-cap SEC filings behind an adversarial auditor | Retired at cost-of-proof; zero live trades (postmortem in repo) |
-| [portfolio-mirror-agent](https://github.com/brooksmoore/portfolio-mirror-agent) | Deterministic 13F mirror-basket agent; append-only ownership ledger, fail-closed broker safety | Concluded at a pre-set stop |
+| multi-agent trading platform | Three strategy sleeves behind one deterministic risk and execution layer; 878 tests | Paper |
+| btc event-contract trader | Short-horizon BTC event contracts, rebuilt measurement-first after the 97% artifact | Paper; forward test running |
+| kalshi maker experiment | Weather strategy retired by the pre-committed test above; the repo now hosts a separately pre-registered maker-side experiment with frozen kill bars | Simulation only |
+| music-market trader | Paper Kalshi music-market trader with a pre-registered research window; no order-placing code by construction | Paper, window running |
+| umbrella fleet brain | The read-only governance layer: ownership ledger, fleet exposure, AI-spend metering, experiment registry, decision-sanity monitor; 396 tests | Running; never trades |
+| cross-venue arbitrage | Kalshi/Polymarket structural arbitrage; ~200K markets canonicalized per cycle | Concluded |
+| SEC-filings agent | LLM reasoning on small-cap filings behind an adversarial auditor | Retired at cost-of-proof; zero live trades |
+| 13F mirror agent | Deterministic mirror-basket agent; append-only ownership ledger, fail-closed broker safety | Concluded at a pre-set stop |
+
+The fleet currently holds no live capital. Every agent above runs on paper or is concluded.
 
 Strategies are paper-traded until the evidence earns capital. The reusable rules, separated from the bots, are in [the verification playbook](VERIFICATION_PLAYBOOK.md).
 
 ---
 
-*Last updated 2026-08-02. Every number above is verifiable in the repos' commit histories, test suites, and audit ledgers. Two coordination and research repos run privately and are noted without links.*
+*Last updated 2026-08-05. Every number above is drawn from the fleet's own test suites, commit histories, and audit ledgers. The trading repositories are private; strategy research is the one thing here worth withholding.*
