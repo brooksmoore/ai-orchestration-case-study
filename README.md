@@ -57,7 +57,7 @@ That single insight reframed the entire project, and it's the most valuable thin
 
 **Discipline under a real loss.** A small 13F-mirror agent traded real money on a ring-fenced account and went against me. I closed it at the pre-committed stop rather than on a story I told myself. What I do when a system I built loses money is diagnose and constrain it, not rationalize it, and not raise the stakes to prove it wrong.
 
-**The system overruled a result I wanted.** The one I'm proudest of. A strategy cleared the statistical bar on its own numbers, a genuine "this works" signal. The gate then asked a second question: *out of how many things did we try?* Across 17 registered experiments, a single winner is what luck looks like, so the verdict was automatically demoted from CONTINUE to **INSUFFICIENT**. I built a machine that tells me no, and it was right.
+**The system overruled a result I wanted.** The one I'm proudest of. A strategy cleared the statistical bar on its own numbers, a genuine "this works" signal. The gate then asked a second question: *out of how many things did we try?* Across two dozen registered experiments, a single winner is what luck looks like, so the verdict was automatically demoted from CONTINUE to **INSUFFICIENT**. I built a machine that tells me no, and it was right.
 
 ---
 
@@ -82,7 +82,7 @@ Adding research on self-improving and co-evolutionary systems produced the sharp
 
 Selection is the hard half, and it's solved. Variation is the frontier, and it's a build problem, which is the good kind.
 
-The running system confirmed the same thing from a different direction. The research engine caps how many experiments run at once, and I found **two of its three slots held by a bot I'd retired days earlier.** Clearing them took an afternoon and multiplied discovery throughput across the whole operation, from roughly 1 to 2 viable attempts a year up to the 24 the design supports, without loosening a single standard.
+The running system confirmed the same thing from a different direction. The research engine caps how many experiments run at once, and I found **two of its three slots held by a bot I'd retired days earlier.** Clearing them took an afternoon. The cap itself turned out to be the deeper constraint: at a realistic hit rate, a handful of attempts with no survivors is the *expected* result, not evidence the method is broken — so the honest response is more shots, not a lower bar. I raised the concurrency limit only after confirming that the multiple-comparisons correction still tightens as attempts rise, which makes any single winner **harder** to claim, not easier. Throughput went up without loosening a standard.
 
 Theory pointed at the constraint. The system confirmed it. The fix followed the theory. That feedback between the written research and the running fleet is the real product here, and it compounds.
 
@@ -127,9 +127,9 @@ The repositories are private. They hold strategy research that loses its value o
 |---|---|---|
 | multi-agent trading platform | Three strategy sleeves behind one deterministic risk and execution layer; 878 tests | Paper |
 | btc event-contract trader | Short-horizon BTC event contracts, rebuilt measurement-first after the 97% artifact | Paper; forward test running |
-| kalshi maker experiment | Weather strategy retired by the pre-committed test above; the repo now hosts a separately pre-registered maker-side experiment with frozen kill bars | Simulation only |
+| kalshi maker experiment | Weather strategy retired by the pre-committed test above; a second maker-side thesis then ran to its own frozen kill bar and was retired on it | Concluded on a pre-registered bar |
 | music-market trader | Paper Kalshi music-market trader with a pre-registered research window; no order-placing code by construction | Paper, window running |
-| umbrella fleet brain | The read-only governance layer: ownership ledger, fleet exposure, AI-spend metering, experiment registry, decision-sanity monitor; 396 tests | Running; never trades |
+| umbrella fleet brain | The read-only governance layer: ownership ledger, fleet exposure, AI-spend metering, experiment registry, decision-sanity monitor, reachability audit; 411 tests | Running; never trades |
 | cross-venue arbitrage | Kalshi/Polymarket structural arbitrage; ~200K markets canonicalized per cycle | Concluded |
 | SEC-filings agent | LLM reasoning on small-cap filings behind an adversarial auditor | Retired at cost-of-proof; zero live trades |
 | 13F mirror agent | Deterministic mirror-basket agent; append-only ownership ledger, fail-closed broker safety | Concluded at a pre-set stop |
@@ -140,4 +140,4 @@ Strategies are paper-traded until the evidence earns capital. The reusable rules
 
 ---
 
-*Last updated 2026-08-05. Every number above is drawn from the fleet's own test suites, commit histories, and audit ledgers. The trading repositories are private; strategy research is the one thing here worth withholding.*
+*Last updated 2026-08-08. Every number above is drawn from the fleet's own test suites, commit histories, and audit ledgers. The trading repositories are private; strategy research is the one thing here worth withholding.*
